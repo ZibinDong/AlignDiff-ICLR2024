@@ -1,20 +1,17 @@
-from diffusion import ODE, Planner
-import environments
-import torch
-import torch.nn as nn
-import numpy as np
-import h5py
-import pickle
-import os
-from tqdm import tqdm
-import imageio
 import argparse
+import os
+import pickle
 
-from utils import GaussianNormalizer, set_seed, count_parameters, AttrFunc, set_mujoco_state
-
+import environments
 import dmc2gym
 import gym
+import h5py
+import numpy as np
+import torch
 
+from diffusion import ODE, Planner
+from utils import (AttrFunc, GaussianNormalizer, count_parameters,
+                   set_mujoco_state, set_seed)
 
 if __name__ == "__main__":
     
@@ -88,30 +85,6 @@ if __name__ == "__main__":
     planner = Planner(ode, attr_func, normalizer, max_attr, min_attr)
 
     o = env.reset()
-
-    # writer = imageio.get_writer(f'{task}_{label_type}_{seed}_33M.mp4', fps=30)
-    # pbar = tqdm(range(1000))
-    # for t in pbar:
-        
-    #     if t == 0:
-    #         target_attr = [0,1.,0,1.]
-    #     elif t == 200:
-    #         target_attr = [0,0.2,0,0.2]
-    #     elif t == 400:
-    #         target_attr = [0,0.8,0,0.8]
-    #     elif t == 600:
-    #         target_attr = [0,0.5,0,0.5]
-    #     elif t == 800:
-    #         target_attr = [0,0.1,0,0.0]
-        
-    #     a, pred_attr = planner.plan(o, traj_len, target_attr, [0,0,0,1], n_samples=64, w=1.5, sample_steps=5)
-    #     o, r, d, info = env.step(a)
-    #     vel = env.physics.horizontal_velocity()
-    #     tht = env.physics.torso_height()
-    #     img = env.render('rgb_array', width=256,height=256)
-    #     writer.append_data(img)
-    #     pbar.set_description(f"vel:{tht:.2f} pred_attr:{pred_attr[-1]:.2f}")
-    # writer.close()
 
     target_cond = np.empty((n_tests, attr_dim))
     cond_mask = np.empty((n_tests, attr_dim))

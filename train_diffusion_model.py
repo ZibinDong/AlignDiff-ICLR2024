@@ -1,14 +1,12 @@
-from diffusion import ODE
-
-import torch
-import torch.nn as nn
-import numpy as np
-import h5py
-from tqdm import tqdm
 import argparse
 
-from utils import GaussianNormalizer, set_seed, count_parameters
+import h5py
+import numpy as np
+import torch
+from tqdm import tqdm
 
+from diffusion import ODE
+from utils import GaussianNormalizer, count_parameters, set_seed
 
 if __name__ == "__main__":
     

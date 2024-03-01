@@ -1,12 +1,12 @@
-import os
-import h5py
-import torch
 import argparse
+import os
+
+import h5py
 import numpy as np
+import torch
 from tqdm import tqdm
 
-from utils import AttrFunc, GaussianNormalizer, set_seed, get_grid_indices
-
+from utils import AttrFunc, GaussianNormalizer, get_grid_indices, set_seed
 
 if __name__ == "__main__":
     
