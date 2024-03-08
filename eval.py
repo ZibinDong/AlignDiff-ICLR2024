@@ -2,13 +2,14 @@ import argparse
 import os
 import pickle
 
-import environments
 import dmc2gym
 import gym
 import h5py
 import numpy as np
 import torch
+from tqdm import tqdm
 
+import environments
 from diffusion import ODE, Planner
 from utils import (AttrFunc, GaussianNormalizer, count_parameters,
                    set_mujoco_state, set_seed)
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     episode_len = 500 if task == "hopper" else 1000
     seg_len = 50 if task == "walker" else 100
     n_segs = 3 if task == "walker" else 1
-    if task == "humanoid": model_size_cfg = {"d_model": 512, "n_heads": 8, "depth": 14}
+    if "humanoid" in task: model_size_cfg = {"d_model": 512, "n_heads": 8, "depth": 14}
     else: model_size_cfg = {"d_model": 384, "n_heads": 6, "depth": 12}
     
     n_tests = 100
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         if task == "walker": 
             dataset_states = f["states"][:]
             dataset_obs = f["observations"][:]
-        elif task == "humanoid":
+        elif "humanoid" in task:
             dataset_qpos = f["qpos"][:]
             dataset_qvel = f["qvel"][:]
             dataset_obs = f["observations"][:]
@@ -71,7 +72,7 @@ if __name__ == "__main__":
         env = dmc2gym.make(domain_name="walker", task_name="walk", seed=seed, visualize_reward=False)
     elif task == "hopper":
         env = gym.make("MO-Hopper-v2")
-    elif task == "humanoid":
+    elif "humanoid" in task:
         env = gym.make("MO-Humanoid-v4")
     o_dim, a_dim = env.observation_space.shape[0], env.action_space.shape[0]
 
@@ -90,9 +91,10 @@ if __name__ == "__main__":
     cond_mask = np.empty((n_tests, attr_dim))
     real_cond = np.empty((n_tests, n_segs, attr_dim))
     mae = np.empty((n_tests, n_segs))
-    length = seg_len*n_segs
+    length = seg_len * n_segs
 
-    for e in range(n_tests):
+    pbar = tqdm(range(n_tests))
+    for e in pbar:
         
         attr = np.random.rand(attr_dim)
         if task == "hopper": attr[1] = np.clip((1-attr[0])+(np.random.rand()-0.5)*(1.5/5.), 0., 1.)
@@ -101,7 +103,7 @@ if __name__ == "__main__":
         target_cond[e] = attr
         cond_mask[e] = _attr_mask
         
-        print(f'[Eval {e+1}/{n_tests}] target attr: {attr} mask: {_attr_mask}')
+        # print(f'[Eval {e+1}/{n_tests}] target attr: {attr} mask: {_attr_mask}')
         
         o = env.reset()
         if task == "walker":
@@ -109,7 +111,7 @@ if __name__ == "__main__":
             env.physics.set_state(dataset_states[idx])
             env.physics.forward()
             o = dataset_obs[idx]
-        elif task == "humanoid":
+        elif "humanoid" in task:
             idx = np.random.randint(dataset_qpos.shape[0])
             set_mujoco_state(env, dataset_qpos[idx], dataset_qvel[idx])
             o = dataset_obs[idx]
@@ -119,7 +121,7 @@ if __name__ == "__main__":
         # walker 3.0 / hopper 2.0 / 
         # walker/ hopper 5  / humanoid 10
         for t in range(length):
-            a, _ = planner.plan(o, traj_len, attr, _attr_mask, n_samples=256, w=3., sample_steps=10)
+            a, _ = planner.plan(o, traj_len, attr, _attr_mask, n_samples=256, w=3., sample_steps=5)
             o, r, d, info = env.step(a)
             traj[0, t] = o
 
@@ -131,7 +133,7 @@ if __name__ == "__main__":
                 normalized_attr = (pred_attr-min_attr[None,])/(max_attr-min_attr)[None,]
                 real_cond[e, k] = normalized_attr.cpu().numpy()[0]
                 mae[e, k] = ((_attr_mask/_attr_mask.sum())*np.abs(real_cond[e, k]-target_cond[e])).sum()
-            print(f'[Eval {e+1}/{n_tests}] Finished. real attr: {real_cond[e]}. MAE: {mae[e]}')
+            pbar.set_description(f"target attr: {attr} mask: {_attr_mask} real attr: {real_cond[e]} MAE: {mae[e]}")
             
     save_file_name = f"{task}_{label_type}_{seed}.pkl"
     if not os.path.exists(f"results/evaluation"): os.makedirs(f"results/evaluation")

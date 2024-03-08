@@ -1,3 +1,7 @@
 /datasets
 /results
 */__pycache__
+*.log
+*.pkl
+envtest.py
+*.txt

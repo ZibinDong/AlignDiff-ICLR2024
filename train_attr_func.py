@@ -53,6 +53,7 @@ if __name__ == "__main__":
     # Train attribute function
     print(f"Start training {task} attribute function with {label_type} labels.")
     mean_sr, ckpt_mean_sr, erly_stop_cnt = 0., 0., 0
+    pbar = tqdm(range(n_gradient_steps))
     for n in range(n_gradient_steps):
         log = {"loss": np.zeros(attr_func.ensemble_size)}
         for k in range(attr_func.ensemble_size):
@@ -68,7 +69,8 @@ if __name__ == "__main__":
                 mean_sr = ((prob >= 0.5) == (eval_pref_ds == 0)).float().mean(0).cpu().numpy()
                 attr_func.train()
             log["mean_sr"] = mean_sr
-            print(f"[Step {n+1}] Loss {log['loss']/100.} Mean success rate: {mean_sr}")
+            pbar.update(100)
+            pbar.set_description(f"Loss {log['loss']/100.} Mean success rate: {mean_sr}")
             log = {"loss": np.zeros(attr_func.ensemble_size)}
             ckpt_mean_sr = mean_sr.copy()
             attr_func.save(f'{task}_{label_type}')

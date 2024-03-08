@@ -63,7 +63,8 @@ class ODE():
         # preserve the first obs
         eps[:,0,:self.o_dim] = 0.
         loss_mask = torch.ones_like(x)
-        loss_mask[:,0,:self.o_dim] = 0.
+        loss_mask[:,0,:self.o_dim] = 0.        
+        loss_mask[:,0,self.o_dim:] = 10.
         mask = (torch.rand(*condition.shape, device=self.device) > 0.2).float()
         loss = (loss_mask * self.loss_weighting(sigma) * (self.D(x + eps, sigma, condition, mask) - x)**2).mean()
         self.optim.zero_grad()
