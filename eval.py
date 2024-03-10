@@ -11,8 +11,7 @@ from tqdm import tqdm
 
 import environments
 from diffusion import ODE, Planner
-from utils import (AttrFunc, GaussianNormalizer, count_parameters,
-                   set_mujoco_state, set_seed)
+from utils import AttrFunc, GaussianNormalizer, set_mujoco_state, set_seed
 
 if __name__ == "__main__":
     
@@ -29,7 +28,7 @@ if __name__ == "__main__":
     
     traj_len = 32 if task == "walker" else 100
     episode_len = 500 if task == "hopper" else 1000
-    seg_len = 50 if task == "walker" else 100
+    seg_len = 50 if task == "walker" or task == "humanoid" else 100
     n_segs = 3 if task == "walker" else 1
     if "humanoid" in task: model_size_cfg = {"d_model": 512, "n_heads": 8, "depth": 14}
     else: model_size_cfg = {"d_model": 384, "n_heads": 6, "depth": 12}
@@ -118,10 +117,9 @@ if __name__ == "__main__":
         
         traj = np.empty((1, length, o_dim))
         
-        # walker 3.0 / hopper 2.0 / 
-        # walker/ hopper 5  / humanoid 10
         for t in range(length):
-            a, _ = planner.plan(o, traj_len, attr, _attr_mask, n_samples=256, w=3., sample_steps=5)
+            a, pred_attr = planner.plan(o, traj_len, attr, _attr_mask, n_samples=256, sample_steps=5,
+                w=2. if task == "hopper" else 3.)
             o, r, d, info = env.step(a)
             traj[0, t] = o
 
